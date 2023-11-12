@@ -51,9 +51,16 @@ namespace Sprout.Exam.WebApp.Controllers
         public async Task<IActionResult> Put(Employee input)
         {
             EmployeeRepository employeeRepository = new EmployeeRepository();
-            object result = employeeRepository.UpdateEmployeeWithId(input);
+            Result result = employeeRepository.UpdateEmployeeWithId(input);
             
-            return Ok(input);
+            if(result.Success)
+            {
+                return Ok(input);
+            }
+            else
+            {
+                return StatusCode(500, result.Message);
+            }
         }
 
         /// <summary>

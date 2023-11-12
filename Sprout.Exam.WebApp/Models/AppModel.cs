@@ -25,4 +25,9 @@ namespace Sprout.Exam.WebApp.Models
         [JsonProperty("absentDays")]
         public string absentDays { get; set; }
     }
+    public class  Result
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+    }
 }
