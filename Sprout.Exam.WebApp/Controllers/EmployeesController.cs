@@ -18,7 +18,12 @@ namespace Sprout.Exam.WebApp.Controllers
     [ApiController]
     public class EmployeesController : ControllerBase
     {
+        private EmployeeRepository _employeeRepository = new EmployeeRepository();
 
+        public EmployeeRepository EmployeeRepository
+        {
+            set => _employeeRepository = value;
+        }
         /// <summary>
         /// Refactor this method to go through proper layers and fetch from the DB.
         /// </summary>
@@ -26,8 +31,7 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            EmployeeRepository employeeRepository = new EmployeeRepository();
-            var result = await Task.FromResult(employeeRepository.ListAll());
+            var result = await Task.FromResult(_employeeRepository.ListAll());
             return Ok(result);
         }
 
@@ -38,8 +42,7 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            EmployeeRepository employeeRepository = new EmployeeRepository();
-            var result = await Task.FromResult(employeeRepository.ListById(id));
+            var result = await Task.FromResult(_employeeRepository.ListById(id));
             return Ok(result);
         }
 
@@ -50,8 +53,7 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(Employee input)
         {
-            EmployeeRepository employeeRepository = new EmployeeRepository();
-            Result result = employeeRepository.UpdateEmployeeWithId(input);
+            Result<Employee> result = _employeeRepository.UpdateEmployeeWithId(input);
             
             if(result.Success)
             {
@@ -70,10 +72,14 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Post(Employee input)
         {
-            EmployeeRepository employeeRepository = new EmployeeRepository();
-            Employee result = employeeRepository.InsertNewEmployee(input);
-            
-            return Created($"/api/employees/{result.Id}", result.Id);
+            Result<Employee> result = _employeeRepository.InsertNewEmployee(input);
+
+            if (!result.Success)
+            {
+                return StatusCode(500, result.Message);
+            }
+
+            return Created($"/api/employees/{result.Data.Id}", result.Data.Id);
         }
 
 
@@ -84,9 +90,14 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            EmployeeRepository employeeRepository = new EmployeeRepository();
-            object result = employeeRepository.DeleteEmployeeWithId(id);
-            return Ok(id);
+            Result<Employee> result = _employeeRepository.DeleteEmployeeWithId(id);
+
+            if (!result.Success)
+            {
+                return StatusCode(500, result.Message);
+            }
+
+            return Ok(result.Data.Id);
         }
 
 
@@ -102,8 +113,7 @@ namespace Sprout.Exam.WebApp.Controllers
         //public async Task<IActionResult> Calculate(int id, decimal absentDays, string workedDays)
         public async Task<IActionResult> Calculate(CalculatePayload input)
         {
-            EmployeeRepository employeeRepository = new EmployeeRepository();
-            var result = employeeRepository.ListById(input.id);
+            var result = _employeeRepository.ListById(input.id);
 
             if (result == null) return NotFound();
 
