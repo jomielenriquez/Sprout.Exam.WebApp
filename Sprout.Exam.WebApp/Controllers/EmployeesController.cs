@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Sprout.Exam.Business.DataTransferObjects;
 using Sprout.Exam.Common.Enums;
+using Sprout.Exam.WebApp.Data;
+using Sprout.Exam.WebApp.Models;
+using Newtonsoft.Json;
 
 namespace Sprout.Exam.WebApp.Controllers
 {
@@ -23,7 +26,8 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList);
+            EmployeeRepository employeeRepository = new EmployeeRepository();
+            var result = await Task.FromResult(employeeRepository.ListAll());
             return Ok(result);
         }
 
@@ -34,7 +38,8 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
+            EmployeeRepository employeeRepository = new EmployeeRepository();
+            var result = await Task.FromResult(employeeRepository.ListById(id));
             return Ok(result);
         }
 
@@ -43,15 +48,12 @@ namespace Sprout.Exam.WebApp.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(EditEmployeeDto input)
+        public async Task<IActionResult> Put(Employee input)
         {
-            var item = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == input.Id));
-            if (item == null) return NotFound();
-            item.FullName = input.FullName;
-            item.Tin = input.Tin;
-            item.Birthdate = input.Birthdate.ToString("yyyy-MM-dd");
-            item.TypeId = input.TypeId;
-            return Ok(item);
+            EmployeeRepository employeeRepository = new EmployeeRepository();
+            object result = employeeRepository.UpdateEmployeeWithId(input);
+            
+            return Ok(input);
         }
 
         /// <summary>
@@ -59,21 +61,12 @@ namespace Sprout.Exam.WebApp.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> Post(CreateEmployeeDto input)
+        public async Task<IActionResult> Post(Employee input)
         {
-
-           var id = await Task.FromResult(StaticEmployees.ResultList.Max(m => m.Id) + 1);
-
-            StaticEmployees.ResultList.Add(new EmployeeDto
-            {
-                Birthdate = input.Birthdate.ToString("yyyy-MM-dd"),
-                FullName = input.FullName,
-                Id = id,
-                Tin = input.Tin,
-                TypeId = input.TypeId
-            });
-
-            return Created($"/api/employees/{id}", id);
+            EmployeeRepository employeeRepository = new EmployeeRepository();
+            Employee result = employeeRepository.InsertNewEmployee(input);
+            
+            return Created($"/api/employees/{result.Id}", result.Id);
         }
 
 
@@ -84,9 +77,8 @@ namespace Sprout.Exam.WebApp.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
-            if (result == null) return NotFound();
-            StaticEmployees.ResultList.RemoveAll(m => m.Id == id);
+            EmployeeRepository employeeRepository = new EmployeeRepository();
+            object result = employeeRepository.DeleteEmployeeWithId(id);
             return Ok(id);
         }
 
@@ -100,24 +92,39 @@ namespace Sprout.Exam.WebApp.Controllers
         /// <param name="workedDays"></param>
         /// <returns></returns>
         [HttpPost("{id}/calculate")]
-        public async Task<IActionResult> Calculate(int id,decimal absentDays,decimal workedDays)
+        //public async Task<IActionResult> Calculate(int id, decimal absentDays, string workedDays)
+        public async Task<IActionResult> Calculate(CalculatePayload input)
         {
-            var result = await Task.FromResult(StaticEmployees.ResultList.FirstOrDefault(m => m.Id == id));
+            EmployeeRepository employeeRepository = new EmployeeRepository();
+            var result = employeeRepository.ListById(input.id);
 
             if (result == null) return NotFound();
+
             var type = (EmployeeType) result.TypeId;
             return type switch
             {
                 EmployeeType.Regular =>
                     //create computation for regular.
-                    Ok(25000),
+                    Ok(CalculateRegular(decimal.Parse(input.absentDays))),
                 EmployeeType.Contractual =>
                     //create computation for contractual.
-                    Ok(20000),
+                    Ok(CalculateContractual(decimal.Parse(input.workedDays))),
                 _ => NotFound("Employee Type not found")
             };
-
         }
 
+        private decimal CalculateRegular(decimal absentDays)
+        {
+            decimal result = 20000M - (absentDays * (20000M / 22M)) - (20000M * 0.12M);
+            result = Math.Round(result, 2);
+            return result;
+        }
+
+        private decimal CalculateContractual(decimal workedDays)
+        {
+            decimal result = 500M * workedDays;
+            result = Math.Round(result, 2);
+            return result;
+        }
     }
 }
