@@ -94,13 +94,12 @@
 
             return employee;
         }
-        public object UpdateEmployeeWithId(Employee employee)
+        public Result UpdateEmployeeWithId(Employee employee)
         {
             string connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            object result = new
-            {
-                success = "true"
+            Result result = new Result() { 
+                Success = false,
             };
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -122,22 +121,18 @@
 
                         if (rowsAffected > 0)
                         {
-                            result = new
-                            {
-                                success = "true"
-                            };
+                            result.Success = true;
                         }
                         else
                         {
-                            result = new
-                            {
-                                success = "true"
-                            };
+                            result.Success = false;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
+                    result.Success= false;
+                    result.Message = ex.Message;
                     Console.WriteLine($"Error: {ex.Message}");
                 }
             }

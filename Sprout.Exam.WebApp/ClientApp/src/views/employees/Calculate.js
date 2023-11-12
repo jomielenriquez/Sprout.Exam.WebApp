@@ -6,7 +6,7 @@ export class EmployeeCalculate extends Component {
 
   constructor(props) {
     super(props);
-    this.state = { id: 0,fullName: '',birthdate: '',tin: '',typeId: 1,absentDays: '0',workedDays: '0',netIncome: 0, loading: true,loadingCalculate:false };
+    this.state = { id: 0,fullName: '',birthdate: '',tin: '',typeId: 1,absentDays: '0',workedDays: '0',netIncome: '0', loading: true,loadingCalculate:false };
   }
 
   componentDidMount() {
@@ -106,7 +106,7 @@ export class EmployeeCalculate extends Component {
     };
     const response = await fetch('api/employees/' + this.state.id + '/calculate/',requestOptions);
     const data = await response.json();
-    this.setState({ loadingCalculate: false,netIncome: data });
+    this.setState({ loadingCalculate: false,netIncome: data.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
   }
 
   async getEmployee(id) {
