@@ -14,7 +14,7 @@
         private readonly IConfiguration configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
-        public List<Employee> ListAll()
+        public virtual List<Employee> ListAll()
         {
             string connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -56,7 +56,7 @@
             return list;
         }
 
-        public Employee ListById(int Id)
+        public virtual Employee ListById(int Id)
         {
             string connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -94,11 +94,11 @@
 
             return employee;
         }
-        public Result UpdateEmployeeWithId(Employee employee)
+        public virtual Result<Employee> UpdateEmployeeWithId(Employee employee)
         {
             string connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            Result result = new Result() { 
+            Result<Employee> result = new Result<Employee>() { 
                 Success = false,
             };
 
@@ -139,13 +139,17 @@
 
             return result;
         }
-        public object DeleteEmployeeWithId(int Id)
+        public virtual Result<Employee> DeleteEmployeeWithId(int Id)
         {
             string connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            object result = new
+            Result<Employee> result = new Result<Employee>()
             {
-                success = "true"
+                Success = false,
+                Data = new Employee()
+                {
+                    Id = Id,
+                }
             };
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -163,17 +167,11 @@
 
                         if (rowsAffected > 0)
                         {
-                            result = new
-                            {
-                                success = "true"
-                            };
+                            result.Success = true;
                         }
                         else
                         {
-                            result = new
-                            {
-                                success = "true"
-                            };
+                            result.Success = false;
                         }
                     }
                 }
@@ -185,8 +183,12 @@
 
             return result;
         }
-        public Employee InsertNewEmployee(Employee employee)
+        public virtual Result<Employee> InsertNewEmployee(Employee employee)
         {
+            Result<Employee> result = new Result<Employee>()
+            {
+                Success = false
+            };
             string connectionString = configuration.GetConnectionString("DefaultConnection");
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -209,15 +211,19 @@
                         int newEmployeeId = Convert.ToInt32(command.ExecuteScalar());
 
                         employee.Id = newEmployeeId;
+                        result.Success = true;
+                        result.Data = employee;
                     }
                 }
                 catch (Exception ex)
                 {
+                    result.Success = false;
+                    result.Message = ex.Message;
                     Console.WriteLine($"Error: {ex.Message}");
                 }
             }
 
-            return employee;
+            return result;
         }
     }
 }
